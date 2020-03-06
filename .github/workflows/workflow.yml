@@ -1,27 +1,49 @@
+# Name of the workflow
 name: Basic-CI
 
+# When someone will push or make PR to this repository, this workflow will start
 on: [push, pull_request]
 
 jobs:
   tests:
 
+    # This workflow task will run on Ubuntu machine
     runs-on: ubuntu-latest
 
+    # Steps that should be performed to check whether tests task was successful or not
     steps:
-      - uses: actions/checkout@v2
+      - name: "Checkout latest revision"
+        uses: actions/checkout@v2
+
+        # We are using shivammathur/setup-php@v1 public GitHub actions for keeping things easier
       - name: "Install PHP with extensions"
         uses: shivammathur/setup-php@v1
         with:
+          # This job will be running on php7.4 version
           php-version: '7.4'
+
+          # For PHPUnit code coverage, we need xdebug
           coverage: xdebug
+
+          # If we want to enable any other PHP extension we can add here
           extensions: xdebug, intl, pdo_mysql, pdo
+
+      # We need to install composer.phar first in the system
       - name: Install composer
         run: curl --show-error --silent https://getcomposer.org/installer | php
+
+      # Run composer to install all dependencies
       - name: Install composer dependencies
         run: php composer.phar install
+
+      # Now run the PHPUnit tests
       - name: Run PHPUnit tests
         run: ./vendor/bin/phpunit --configuration=phpunit.xml --coverage-clover ./build/coverage/log/coverage.xml
+
+      # For code coverage report we are uploading our code coverage report to scrutinizer
       - name: Downloading scrutinizer ocular.phar
         run: wget https://scrutinizer-ci.com/ocular.phar
+
+      # Uploading reports for analysis
       - name: Uploading code coverage to scrutinize
         run: php ocular.phar code-coverage:upload --format=php-clover ./build/coverage/log/coverage.xml
